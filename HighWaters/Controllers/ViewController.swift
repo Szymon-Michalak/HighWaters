@@ -23,9 +23,16 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
         
         self.locationManager.startUpdatingLocation()
         self.mapView.showsUserLocation = true
+        self.mapView.delegate = self
         
         setupUI()
         
+    }
+    
+    func mapView(_ mapView: MKMapView, didUpdate userLocation: MKUserLocation) {
+        
+        let region = MKCoordinateRegion(center: self.mapView.userLocation.coordinate, span: MKCoordinateSpan(latitudeDelta: 0.08, longitudeDelta: 0.08))
+        self.mapView.setRegion(region, animated: true)
     }
     
     @IBAction func addFloodButtonPressed() {
