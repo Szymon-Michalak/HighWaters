@@ -17,13 +17,6 @@ A small app where users have the ability to report floods and see other reported
 - CoreLocation
 - CocoaPods
 
-## Features
-
-- Light/dark mode toggle
-- Live previews
-- Fullscreen mode
-- Cross platform
-
 <!-- ## Installation
 
 ### Prerequisites

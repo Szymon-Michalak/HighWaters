@@ -5,7 +5,7 @@ import CoreLocation
 import FirebaseCore
 import FirebaseFirestore
 
-class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDelegate {
+class ViewController: UIViewController, CLLocationManagerDelegate {
 
     @IBOutlet weak var mapView: MKMapView!
     @IBOutlet weak var floodButton: UIButton!
@@ -17,15 +17,15 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
     private lazy var db = Firestore.firestore()
 
     private lazy var locationManager: CLLocationManager = {
-        
+
         let manager = CLLocationManager()
         manager.desiredAccuracy = kCLLocationAccuracyBest
         manager.distanceFilter = kCLDistanceFilterNone
         manager.requestAlwaysAuthorization()
         return manager
-        
+
     }()
-    
+
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -41,6 +41,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
     private func updateAnnotations() {
 
         DispatchQueue.main.async {
+            self.mapView.removeAnnotations((self.mapView.annotations))
             self.floods.forEach {
                 self.addFloodToMap($0)
             }
@@ -80,46 +81,23 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
         }
     }
 
-    func mapView(_ mapView: MKMapView, didUpdate userLocation: MKUserLocation) {
-        
-        let region = MKCoordinateRegion(center: self.mapView.userLocation.coordinate, span: MKCoordinateSpan(latitudeDelta: 0.08, longitudeDelta: 0.08))
-        self.mapView.setRegion(region, animated: true)
-    }
-    
     @IBAction func addFloodButtonPressed() {
         
         saveFloodToFirebase()
+
     }
     
     private func addFloodToMap(_ flood: Flood) {
         
-        let annotation = MKPointAnnotation()
+        let annotation = FloodAnnotation(flood)
         annotation.coordinate = CLLocationCoordinate2D(latitude: flood.latitude, longitude: flood.longitude)
         annotation.title = "Flooded"
         annotation.subtitle = flood.reportedDate.formatAsString()
+
         self.mapView.addAnnotation(annotation)
         
     }
 
-    func mapView(_ mapView: MKMapView, viewFor annotation: MKAnnotation) -> MKAnnotationView? {
-
-        if annotation is MKUserLocation {
-            return nil
-        }
-
-        var annotationView = mapView.dequeueReusableAnnotationView(withIdentifier: "FloodAnnotationView")
-
-        if annotationView == nil {
-            annotationView = MKAnnotationView(annotation: annotation, reuseIdentifier: "FloodAnnotationView")
-            annotationView?.canShowCallout = true
-            annotationView?.image = UIImage(named: "flood-annotation")!.resizeImageTo(size: CGSize(width: 40, height: 40))
-            annotationView?.rightCalloutAccessoryView = UIButton.buttonForRightAccessoryView()
-
-        }
-
-        return annotationView
-    }
-    
     private func saveFloodToFirebase() {
         
         guard let location = self.locationManager.location else {
@@ -147,5 +125,48 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
     }
 
 
+}
+
+extension ViewController: MKMapViewDelegate {
+    func mapView(_ mapView: MKMapView, didUpdate userLocation: MKUserLocation) {
+
+        let region = MKCoordinateRegion(center: self.mapView.userLocation.coordinate, span: MKCoordinateSpan(latitudeDelta: 0.08, longitudeDelta: 0.08))
+        self.mapView.setRegion(region, animated: true)
+    }
+
+    func mapView(_ mapView: MKMapView, viewFor annotation: MKAnnotation) -> MKAnnotationView? {
+
+        if annotation is MKUserLocation {
+            return nil
+        }
+
+        var annotationView = mapView.dequeueReusableAnnotationView(withIdentifier: "FloodAnnotationView")
+
+        if annotationView == nil {
+            annotationView = MKAnnotationView(annotation: annotation, reuseIdentifier: "FloodAnnotationView")
+            annotationView?.canShowCallout = true
+            annotationView?.image = UIImage(named: "flood-annotation")!.resizeImageTo(size: CGSize(width: 40, height: 40))
+            annotationView?.rightCalloutAccessoryView = UIButton.buttonForRightAccessoryView()
+
+        }
+
+        return annotationView
+    }
+
+    func mapView(_ mapView: MKMapView, annotationView view: MKAnnotationView, calloutAccessoryControlTapped control: UIControl) {
+        print(view.annotation.debugDescription)
+        if let floodAnnotation = view.annotation as? FloodAnnotation {
+            print("Document successfully casted!")
+            let flood = floodAnnotation.flood
+
+            self.db.collection("flooded-regions").document(flood.documentId!).delete() { error in
+                if let error = error {
+                    print("Error removing document \(error)")
+                }
+            }
+
+        }
+
+    }
 }
 
