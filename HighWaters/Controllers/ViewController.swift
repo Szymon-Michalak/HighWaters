@@ -2,11 +2,21 @@
 import UIKit
 import MapKit
 import CoreLocation
+import FirebaseCore
+import FirebaseFirestore
 
 class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDelegate {
 
     @IBOutlet weak var mapView: MKMapView!
-    @IBOutlet weak var floodButton: UIButton! 
+    @IBOutlet weak var floodButton: UIButton!
+    
+    private var documentRef: DocumentReference!
+    
+    private lazy var db: Firestore = {
+        
+        let firestoreDB = Firestore.firestore()
+        return firestoreDB
+    }()
     
     private lazy var locationManager: CLLocationManager = {
         
@@ -37,16 +47,37 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
     
     @IBAction func addFloodButtonPressed() {
         
+        saveFloodToFirebase()
+    }
+    
+    private func addFloodToMap(_ flood: Flood) {
+        
+        let annotation = MKPointAnnotation()
+        annotation.coordinate = CLLocationCoordinate2D(latitude: flood.latitude, longitude: flood.longitude)
+        annotation.title = "Flooded"
+        annotation.subtitle = flood.reportedDate.formatAsString()
+        self.mapView.addAnnotation(annotation)
+        
+    }
+    
+    private func saveFloodToFirebase() {
+        
         guard let location = self.locationManager.location else {
             return
         }
         
-        let annotation = MKPointAnnotation()
-        annotation.title = "Flooded"
-        annotation.subtitle = "Reported on 12/10/2018 8:50 AM"
-        annotation.coordinate = location.coordinate
+        var flood = Flood(latitude: location.coordinate.latitude, longitude: location.coordinate.longitude)
         
-        self.mapView.addAnnotation(annotation)
+        self.documentRef = self.db.collection("flooded-regions").addDocument(data: flood.toDictionary()) { [weak self] error in
+            
+            if let error = error {
+                print(error)
+            } else {
+                flood.documentId = self?.documentRef.documentID
+                self?.addFloodToMap(flood)
+            }
+            
+        }
         
     }
     
