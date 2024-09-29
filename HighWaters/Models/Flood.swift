@@ -1,5 +1,6 @@
 
 import Foundation
+import FirebaseFirestore
 
 struct Flood {
     
@@ -10,7 +11,20 @@ struct Flood {
 }
 
 extension Flood {
-    
+
+    init?(_ snapshot: QueryDocumentSnapshot) {
+
+        guard let latitude = snapshot["latitude"] as? Double,
+            let longitude = snapshot["longitude"] as? Double else {
+                return nil
+        }
+
+        self.latitude = latitude
+        self.longitude = longitude
+        self.documentId = snapshot.documentID
+
+    }
+
     init(latitude: Double, longitude: Double) {
         self.latitude = latitude
         self.longitude = longitude

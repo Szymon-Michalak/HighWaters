@@ -9,15 +9,13 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
 
     @IBOutlet weak var mapView: MKMapView!
     @IBOutlet weak var floodButton: UIButton!
-    
+
+    private(set) var floods = [Flood]()
+
     private var documentRef: DocumentReference!
     
-    private lazy var db: Firestore = {
-        
-        let firestoreDB = Firestore.firestore()
-        return firestoreDB
-    }()
-    
+    private lazy var db = Firestore.firestore()
+
     private lazy var locationManager: CLLocationManager = {
         
         let manager = CLLocationManager()
@@ -36,9 +34,52 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
         self.mapView.delegate = self
         
         setupUI()
-        
+        configureObservers()
+
     }
-    
+
+    private func updateAnnotations() {
+
+        DispatchQueue.main.async {
+            self.floods.forEach {
+                self.addFloodToMap($0)
+            }
+        }
+
+    }
+
+    private func configureObservers() {
+
+        self.db.collection("flooded-regions").addSnapshotListener { [weak self] snapshot, error in
+
+            guard let snapshot = snapshot,
+                  error == nil else {
+                print("Error fetching document")
+                return
+            }
+
+            snapshot.documentChanges.forEach { diff in
+
+                if diff.type == .added {
+                    if let flood = Flood(diff.document) {
+                        self?.floods.append(flood)
+                        self?.updateAnnotations()
+                    }
+
+                } else if diff.type == .removed {
+                    if let flood = Flood(diff.document) {
+                        if let floods = self?.floods {
+                            self?.floods = floods.filter { $0.documentId != flood.documentId }
+                            self?.updateAnnotations()
+                        }
+                    }
+                }
+
+            }
+
+        }
+    }
+
     func mapView(_ mapView: MKMapView, didUpdate userLocation: MKUserLocation) {
         
         let region = MKCoordinateRegion(center: self.mapView.userLocation.coordinate, span: MKCoordinateSpan(latitudeDelta: 0.08, longitudeDelta: 0.08))
