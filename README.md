@@ -9,6 +9,7 @@ A small app where users have the ability to report floods and see other reported
 
 ![App Screenshot](Static/Screenshots.png)
 
+![App Screenshot](Static/AppDemo.mp4)
 ## Technologies Used
 
 - UIKit
