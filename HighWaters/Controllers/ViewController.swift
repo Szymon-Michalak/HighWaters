@@ -100,6 +100,25 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
         self.mapView.addAnnotation(annotation)
         
     }
+
+    func mapView(_ mapView: MKMapView, viewFor annotation: MKAnnotation) -> MKAnnotationView? {
+
+        if annotation is MKUserLocation {
+            return nil
+        }
+
+        var annotationView = mapView.dequeueReusableAnnotationView(withIdentifier: "FloodAnnotationView")
+
+        if annotationView == nil {
+            annotationView = MKAnnotationView(annotation: annotation, reuseIdentifier: "FloodAnnotationView")
+            annotationView?.canShowCallout = true
+            annotationView?.image = UIImage(named: "flood-annotation")!.resizeImageTo(size: CGSize(width: 40, height: 40))
+            annotationView?.rightCalloutAccessoryView = UIButton.buttonForRightAccessoryView()
+
+        }
+
+        return annotationView
+    }
     
     private func saveFloodToFirebase() {
         
