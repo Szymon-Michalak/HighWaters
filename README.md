@@ -4,12 +4,12 @@
 
 A small app where users have the ability to report floods and see other reported floods in real time.
 
-
 ## Screenshots/Demo
 
 ![App Screenshot](Static/Screenshots.png)
 
-![App Screenshot](Static/AppDemo.mp4)
+[HightWatersDemo.webm](https://github.com/user-attachments/assets/200d8452-ec7a-43b8-87a7-e83de0691578)
+
 ## Technologies Used
 
 - UIKit
